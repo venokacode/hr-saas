@@ -9,7 +9,9 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { getActiveOrgId } from '@/lib/organization'
-import { 
+import { sendTestInvitation } from '@/lib/email'
+import { z } from 'zod'
+import {
   createTestSchema, 
   updateTestSchema, 
   inviteCandidateSchema,
@@ -203,7 +205,7 @@ export async function inviteCandidate(formData: FormData) {
     // Verify test exists and belongs to organization
     const { data: test, error: testError } = await supabase
       .from('tests')
-      .select('id')
+      .select('id, title')
       .eq('id', test_id)
       .eq('organization_id', orgId)
       .single()
@@ -272,18 +274,28 @@ export async function inviteCandidate(formData: FormData) {
       return { success: false, error: 'Failed to create test link' }
     }
 
-    // TODO: Send email invitation
-    // For now, just return the link
+    // Generate invite URL
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/test/${token}`
+
+    // Send invitation email
+    const emailResult = await sendTestInvitation({
+      to: email,
+      candidateName: name,
+      testTitle: test.title,
+      testLink: inviteUrl,
+      expiresAt: testLink.expires_at,
+      maxAttempts: max_attempts,
+    })
 
     revalidatePath('/app/modules/writing/tests')
     revalidatePath(`/app/modules/writing/tests/${test_id}`)
-    
     return {
       success: true,
       data: {
-        candidate,
+        candidate: candidate || null,
         testLink,
-        inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/test/${token}`,
+        inviteUrl,
+        emailSent: emailResult.success,
       },
     }
   } catch (error) {

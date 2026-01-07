@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getTestLinkByToken } from '@/features/writing/queries'
 import { submitAttempt } from '@/features/writing/actions'
 import { Button } from '@/components/ui/button'
@@ -47,7 +47,7 @@ export default async function TestSubmissionPage({ params }: PageProps) {
     const result = await submitAttempt(formData)
     
     if (result.success) {
-      // TODO: Redirect to success page
+      redirect(`/test/${token}/success`)
     }
     // TODO: Handle error
   }
