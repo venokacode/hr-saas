@@ -92,11 +92,22 @@ export async function getTestLinks(testId: string) {
 
   const { data, error } = await supabase
     .from('test_links')
-    .select('*')
+    .select(`
+      *,
+      candidate:candidates(
+        name,
+        email
+      ),
+      attempts(
+        id,
+        submitted_at,
+        score
+      )
+    `)
     .eq('test_id', testId)
     .order('created_at', { ascending: false })
 
-  return { data: data as TestLink[] | null, error }
+  return { data, error }
 }
 
 export async function getTestLinkByToken(token: string) {

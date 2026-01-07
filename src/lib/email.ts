@@ -265,3 +265,51 @@ This is an automated email from HR SaaS. Please do not reply to this email.
     }
   }
 }
+
+
+// Generic email sending function
+export interface SendEmailParams {
+  to: string
+  subject: string
+  html: string
+  text: string
+}
+
+export async function sendEmail(params: SendEmailParams) {
+  if (!resend) {
+    console.warn('Resend API key not configured. Email not sent.')
+    return {
+      success: false,
+      error: 'Email service not configured',
+    }
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      text: params.text,
+    })
+
+    if (error) {
+      console.error('Failed to send email:', error)
+      return {
+        success: false,
+        error: error.message || 'Failed to send email',
+      }
+    }
+
+    return {
+      success: true,
+      data,
+    }
+  } catch (error) {
+    console.error('Unexpected error sending email:', error)
+    return {
+      success: false,
+      error: 'An unexpected error occurred',
+    }
+  }
+}

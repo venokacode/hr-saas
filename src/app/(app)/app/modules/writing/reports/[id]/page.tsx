@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getAttempt } from '@/features/writing/queries'
-import { createOrUpdateReport } from '@/features/writing/report-actions'
+import { createOrUpdateReport, generateAIScore } from '@/features/writing/report-actions'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -25,6 +25,16 @@ export default async function ReportDetailPage({ params }: PageProps) {
     'use server'
     
     const result = await createOrUpdateReport(formData)
+    
+    if (result.success) {
+      redirect(`/app/modules/writing/reports/${id}`)
+    }
+  }
+
+  async function handleAIScore() {
+    'use server'
+    
+    const result = await generateAIScore(id)
     
     if (result.success) {
       redirect(`/app/modules/writing/reports/${id}`)
@@ -99,6 +109,29 @@ export default async function ReportDetailPage({ params }: PageProps) {
         <div className="space-y-6">
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Evaluation</h2>
+            
+            {/* AI Auto-score Button */}
+            <form action={handleAIScore} className="mb-4">
+              <Button 
+                type="submit" 
+                variant="outline" 
+                className="w-full border-purple-500 text-purple-700 hover:bg-purple-50"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Generate AI Score
+              </Button>
+            </form>
+            
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">or score manually</span>
+              </div>
+            </div>
             
             <form action={handleSubmit} className="space-y-4">
               <input type="hidden" name="attempt_id" value={id} />

@@ -154,3 +154,144 @@ export async function deleteReport(reportId: string) {
     return { success: false, error: 'An unexpected error occurred' }
   }
 }
+
+// AI Auto-scoring
+import { scoreWritingTest } from '@/lib/ai-scoring'
+import { sendEmail } from '@/lib/email'
+
+export async function generateAIScore(attemptId: string) {
+  try {
+    const supabase = await createClient()
+    const orgId = await getActiveOrgId()
+
+    if (!orgId) {
+      return { success: false, error: 'No active organization' }
+    }
+
+    // Get attempt with test details
+    const { data: attempt, error: attemptError } = await supabase
+      .from('attempts')
+      .select(`
+        *,
+        test_link:test_links(
+          test:tests(
+            title,
+            prompt,
+            instructions,
+            organization_id
+          )
+        ),
+        candidate:candidates(
+          name,
+          email
+        )
+      `)
+      .eq('id', attemptId)
+      .single()
+
+    if (attemptError || !attempt) {
+      return { success: false, error: 'Attempt not found' }
+    }
+
+    // Verify belongs to organization
+    if ((attempt as any).test_link?.test?.organization_id !== orgId) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    if (!attempt.content) {
+      return { success: false, error: 'No content to score' }
+    }
+
+    // Generate AI scores
+    const result = await scoreWritingTest({
+      prompt: (attempt as any).test_link.test.prompt,
+      instructions: (attempt as any).test_link.test.instructions,
+      content: attempt.content,
+    })
+
+    // Create or update report with AI scores
+    const scoreData = {
+      overall: result.overall_score,
+      grammar: result.grammar_score,
+      vocabulary: result.vocabulary_score,
+      coherence: result.coherence_score,
+      task_achievement: result.task_achievement_score,
+    }
+
+    // Check if report exists
+    const { data: existingReport } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('attempt_id', attemptId)
+      .single()
+
+    if (existingReport) {
+      // Update existing
+      await supabase
+        .from('reports')
+        .update({
+          score: scoreData,
+          feedback: result.feedback,
+          generated_at: new Date().toISOString(),
+        })
+        .eq('id', existingReport.id)
+    } else {
+      // Create new
+      await supabase
+        .from('reports')
+        .insert({
+          attempt_id: attemptId,
+          organization_id: orgId,
+          score: scoreData,
+          feedback: result.feedback,
+          generated_at: new Date().toISOString(),
+        })
+    }
+
+    // Send email notification
+    if ((attempt as any).candidate?.email) {
+      try {
+        await sendEmail({
+          to: (attempt as any).candidate.email,
+          subject: `Your ${(attempt as any).test_link.test.title} results are ready`,
+          html: `
+            <h2>Test Results</h2>
+            <p>Hi ${(attempt as any).candidate.name},</p>
+            <p>Your test has been evaluated. Here are your results:</p>
+            <ul>
+              <li><strong>Overall Score:</strong> ${result.overall_score}/100</li>
+              <li><strong>Grammar:</strong> ${result.grammar_score}/100</li>
+              <li><strong>Vocabulary:</strong> ${result.vocabulary_score}/100</li>
+              <li><strong>Coherence:</strong> ${result.coherence_score}/100</li>
+              <li><strong>Task Achievement:</strong> ${result.task_achievement_score}/100</li>
+            </ul>
+            <h3>Feedback</h3>
+            <p>${result.feedback}</p>
+            ${result.strengths.length > 0 ? `
+            <h3>Strengths</h3>
+            <ul>
+              ${result.strengths.map((s) => `<li>${s}</li>`).join('')}
+            </ul>
+            ` : ''}
+            ${result.improvements.length > 0 ? `
+            <h3>Areas for Improvement</h3>
+            <ul>
+              ${result.improvements.map((i) => `<li>${i}</li>`).join('')}
+            </ul>
+            ` : ''}
+          `,
+          text: `Test Results\n\nOverall Score: ${result.overall_score}/100\n\nFeedback: ${result.feedback}`,
+        })
+      } catch (emailError) {
+        console.error('Failed to send result email:', emailError)
+      }
+    }
+
+    revalidatePath('/app/modules/writing/reports')
+    revalidatePath(`/app/modules/writing/reports/${attemptId}`)
+    return { success: true, result }
+  } catch (error) {
+    console.error('AI scoring error:', error)
+    return { success: false, error: 'Failed to generate AI assessment' }
+  }
+}
