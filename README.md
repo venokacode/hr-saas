@@ -1,93 +1,200 @@
 # HR SaaS
 
-一个基于 Next.js 和 Supabase 构建的人力资源管理系统。
+A modern, modular HR management system built with Next.js, Supabase, and AI.
 
-## 技术栈
+## 🚀 Features
 
-- **前端框架**: Next.js 16 (App Router)
-- **语言**: TypeScript
-- **样式**: Tailwind CSS 4
-- **数据库**: Supabase
-- **包管理器**: pnpm
+### Core Platform
+- ✅ **Multi-tenant Architecture**: Organization-based data isolation with RLS
+- ✅ **Authentication**: Secure user authentication with Supabase Auth
+- ✅ **Role-based Access Control**: Owner, Admin, Recruiter, Viewer roles
+- ✅ **Internationalization**: Multi-language support with next-intl
+- ✅ **Modular Design**: Easy to add new modules without refactoring
 
-## 快速开始
+### Writing Module
+- ✅ **Test Management**: Create, edit, and manage writing assessments
+- ✅ **Candidate Invitations**: Email-based test invitations with unique links
+- ✅ **Test Submission**: Candidate-facing test interface
+- ✅ **AI Auto-scoring**: Automated scoring using OpenAI GPT-4.1-mini
+- ✅ **Manual Scoring**: 5-dimension scoring system
+- ✅ **Link Management**: Track and manage all test links
+- ✅ **Email Notifications**: Automated invitation and result emails
 
-### 1. 安装依赖
+### User & Organization Management
+- ✅ **Organization Settings**: Manage organization details
+- ✅ **Team Members**: Invite, manage, and assign roles
+- ✅ **User Profile**: Personal settings and preferences
+- ✅ **Organization Switching**: Support for multiple organizations
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS 4
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **AI**: OpenAI GPT-4.1-mini
+- **Email**: Resend
+- **Deployment**: Vercel
+- **Package Manager**: pnpm
+
+## 📦 Installation
+
+### Prerequisites
+
+- Node.js 22+
+- pnpm 10+
+- Supabase account
+- OpenAI API key
+- Resend API key (optional, for emails)
+
+### Setup
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/venokacode/hr-saas.git
+cd hr-saas
+```
+
+2. **Install dependencies**
 
 ```bash
 pnpm install
 ```
 
-### 2. 配置环境变量
+3. **Configure environment variables**
 
-复制 `.env.example` 文件为 `.env.local` 并填入你的 Supabase 配置：
+Create `.env.local` file:
 
 ```bash
-cp .env.example .env.local
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
+
+# OpenAI
+OPENAI_API_KEY=sk-proj-...
+
+# Resend (optional)
+RESEND_API_KEY=re_...
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-编辑 `.env.local` 文件：
+4. **Set up Supabase database**
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+- Go to Supabase Dashboard > SQL Editor
+- Copy and execute `supabase/schema.sql`
+- Verify all 9 tables are created
 
-### 3. 运行开发服务器
+5. **Run development server**
 
 ```bash
 pnpm dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000) 查看应用。
+Open http://localhost:3000
 
-## 项目结构
+## 🚀 Deployment
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
+
+### Quick Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/venokacode/hr-saas)
+
+1. Click the button above
+2. Configure environment variables
+3. Deploy!
+
+## 📚 Documentation
+
+- [Implementation Guide](./IMPLEMENTATION.md) - Technical implementation details
+- [Deployment Guide](./DEPLOYMENT.md) - Production deployment guide
+- [Security Fixes](./SECURITY_FIXES.md) - Security enhancements
+- [Auth Implementation](./AUTH_IMPLEMENTATION.md) - Authentication system
+- [Writing Module](./WRITING_MODULE_DELIVERY.md) - Writing module features
+- [High Priority Features](./HIGH_PRIORITY_FEATURES_DELIVERY.md) - Advanced features
+- [User & Org Management](./USER_ORG_MANAGEMENT_DELIVERY.md) - Management features
+- [AI Scoring & Links](./AI_SCORING_LINKS_DELIVERY.md) - AI and link management
+
+## 🏗️ Project Structure
 
 ```
 hr-saas/
-├── app/                 # Next.js App Router 页面
-├── lib/                 # 工具函数和配置
-│   └── supabase.ts     # Supabase 客户端配置
-├── components/          # React 组件
-├── public/             # 静态资源
-└── .env.local          # 环境变量（不提交到 Git）
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── (public)/          # Public routes (login, test submission)
+│   │   ├── (app)/             # Authenticated routes
+│   │   │   └── app/
+│   │   │       ├── modules/   # Module routes
+│   │   │       └── settings/  # Settings routes
+│   │   └── api/               # API routes
+│   ├── components/            # Reusable components
+│   │   ├── ui/               # UI components
+│   │   ├── layout/           # Layout components
+│   │   └── modules/          # Module-specific components
+│   ├── features/             # Business logic
+│   │   ├── auth/            # Authentication
+│   │   ├── organization/    # Organization management
+│   │   ├── modules/         # Module registry
+│   │   └── writing/         # Writing module
+│   ├── lib/                  # Utilities
+│   │   ├── supabase/        # Supabase clients
+│   │   ├── ai-scoring.ts    # AI scoring service
+│   │   ├── email.ts         # Email service
+│   │   └── ...
+│   └── messages/             # i18n translations
+├── supabase/                 # Database schema
+└── public/                   # Static assets
 ```
 
-## Supabase 配置
+## 🔐 Security
 
-项目已经配置好 Supabase 客户端，可以在任何组件中导入使用：
+- ✅ Row Level Security (RLS) on all tables
+- ✅ Organization-based data isolation
+- ✅ Role-based access control
+- ✅ UUID validation and rate limiting
+- ✅ Environment variable validation
+- ✅ Type-safe implementation
 
-```typescript
-import { supabase } from '@/lib/supabase'
+## 🧪 Testing
 
-// 示例：查询数据
-const { data, error } = await supabase
-  .from('your_table')
-  .select('*')
+```bash
+# Type check
+pnpm exec tsc --noEmit
+
+# Lint
+pnpm lint
+
+# Build
+pnpm build
 ```
 
-## 开发指南
+## 📝 License
 
-- 使用 TypeScript 进行类型安全开发
-- 使用 Tailwind CSS 进行样式开发
-- 遵循 Next.js App Router 最佳实践
-- 使用 ESLint 保持代码质量
+MIT License - see [LICENSE](./LICENSE) file for details
 
-## 部署
+## 🤝 Contributing
 
-推荐使用 [Vercel](https://vercel.com) 进行部署，它是 Next.js 的官方托管平台。
+Contributions are welcome! Please read our contributing guidelines first.
 
-记得在部署平台配置环境变量：
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+## 📞 Support
 
-## 了解更多
+- Documentation: See docs above
+- Issues: [GitHub Issues](https://github.com/venokacode/hr-saas/issues)
 
-关于 Next.js 的更多信息：
+## 🎉 Acknowledgments
 
-- [Next.js 文档](https://nextjs.org/docs) - 学习 Next.js 的特性和 API
-- [学习 Next.js](https://nextjs.org/learn) - 交互式 Next.js 教程
+Built with:
+- [Next.js](https://nextjs.org/)
+- [Supabase](https://supabase.com/)
+- [OpenAI](https://openai.com/)
+- [Resend](https://resend.com/)
+- [Tailwind CSS](https://tailwindcss.com/)
 
-## 许可证
+---
 
-MIT
+**Made with ❤️ by the HR SaaS Team**
