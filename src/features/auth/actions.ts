@@ -68,17 +68,15 @@ export async function signUp(formData: FormData): Promise<AuthResult> {
       }
     }
 
-    // Create user settings
-    const { error: settingsError } = await supabase
-      .from('user_settings')
-      .insert({
-        user_id: data.user.id,
-        locale: 'en',
-      })
+    // Note: user_settings will be created on first login
+    // This avoids RLS issues during registration
 
-    if (settingsError) {
-      console.error('Failed to create user settings:', settingsError)
-      // Don't fail the sign up if settings creation fails
+    // Check if email confirmation is required
+    if (data.user && !data.user.email_confirmed_at && !data.session) {
+      return {
+        success: true,
+        error: 'Please check your email to confirm your account before signing in.',
+      }
     }
 
     return { success: true }
@@ -118,9 +116,37 @@ export async function signIn(formData: FormData): Promise<AuthResult> {
 
     if (error) {
       console.error('Sign in error:', error)
+      
+      // Provide specific error messages
+      if (error.message.includes('Email not confirmed')) {
+        return {
+          success: false,
+          error: 'Please confirm your email address before signing in. Check your inbox for the confirmation link.',
+        }
+      }
+      
       return {
         success: false,
         error: 'Invalid email or password',
+      }
+    }
+
+    // Create user_settings if it doesn't exist (first login)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: existingSettings } = await supabase
+        .from('user_settings')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!existingSettings) {
+        await supabase
+          .from('user_settings')
+          .insert({
+            user_id: user.id,
+            locale: 'en',
+          })
       }
     }
 
